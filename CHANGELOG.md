@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- PrestaShop Addons validator fixes: escaped admin template output, license headers, .htaccess, no Context::getContext() in classes, phpstan level 5 clean.
+
 ## 1.0.0
 
 - Same features as the WooCommerce plugin.

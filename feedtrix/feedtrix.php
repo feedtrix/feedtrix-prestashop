@@ -26,7 +26,7 @@ require_once __DIR__ . '/classes/FeedTrixResponse.php';
 
 class FeedTrix extends Module
 {
-    public const VERSION = '1.0.0';
+    public const VERSION = '1.0.1';
 
     /** FeedTrix API message languages (Accept-Language); the API picks the best available one, English by default. */
     public const API_LANGUAGES = ['pl', 'en', 'de', 'es', 'fr', 'it'];
@@ -57,7 +57,7 @@ class FeedTrix extends Module
     {
         $this->name = 'feedtrix';
         $this->tab = 'seo';
-        $this->version = '1.0.0';
+        $this->version = '1.0.1';
         $this->author = 'FeedTrix';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -323,11 +323,11 @@ class FeedTrix extends Module
                 continue;
             }
             $product = new Product($id, false, $idLang);
-            $cover = Image::getCover($id);
+            $cover = Product::getCover($id, $this->context);
             $item = [
                 'name' => (string) $product->name,
                 'price' => Tools::getContextLocale($this->context)->formatPrice((float) $snapshot['price'], (string) $snapshot['currency']),
-                'image' => $cover ? $this->context->link->getImageLink($product->link_rewrite, $id . '-' . (int) $cover['id_image'], ImageType::getFormattedName('small')) : '',
+                'image' => !empty($cover['id_image']) ? $this->context->link->getImageLink($product->link_rewrite, $id . '-' . (int) $cover['id_image'], ImageType::getFormattedName('small')) : '',
             ];
             if ('' !== $item['image']) {
                 return $item;
