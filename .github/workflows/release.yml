@@ -1,0 +1,46 @@
+# Release of the FeedTrix PrestaShop module: push a tag "v1.2.3" matching $this->version in feedtrix/feedtrix.php.
+# Builds feedtrix.zip (folder "feedtrix", no keys, no dev files) and attaches it to a GitHub release.
+# The FeedTrix dashboard links "Download module" to feedtrix.zip from the latest release.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(sed -n "s/^ *\$this->version = '\(.*\)';/\1/p" feedtrix/feedtrix.php)
+          constant=$(sed -n "s/^ *\(public \)\{0,1\}const VERSION = '\(.*\)';/\2/p" feedtrix/feedtrix.php)
+          echo "tag=$tag version=$version constant=$constant"
+          [ "$tag" = "$version" ] && [ "$tag" = "$constant" ] || { echo "::error::Tag, \$this->version and VERSION in feedtrix/feedtrix.php must match"; exit 1; }
+          grep -q "^## $tag\$" CHANGELOG.md || { echo "::error::No '## $tag' entry in CHANGELOG.md"; exit 1; }
+
+      - name: PHP 7.2 syntax
+        run: docker run --rm -v "$PWD:/p" -w /p php:7.2-cli sh -c 'find feedtrix -name "*.php" -print0 | xargs -0 -n1 php -l > /dev/null'
+
+      - name: No PHP 8-only functions
+        run: "! grep -rnE '\\b(str_(starts|ends)_with|str_contains|array_is_list)\\(' --include=*.php feedtrix"
+
+      - name: Build feedtrix.zip
+        run: |
+          mkdir -p build
+          rsync -a --exclude='feedtrix-config.php' --exclude='config_*.xml' feedtrix build/
+          (cd build && zip -qr ../feedtrix.zip feedtrix)
+          unzip -l feedtrix.zip | tail -1
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes=$(awk -v v="## ${GITHUB_REF_NAME#v}" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md)
+          gh release create "$GITHUB_REF_NAME" feedtrix.zip --title "FeedTrix ${GITHUB_REF_NAME#v}" --notes "$notes"

@@ -1,0 +1,4 @@
+feedtrix/feedtrix-config.php
+feedtrix/config_*.xml
+build/
+feedtrix.zip
